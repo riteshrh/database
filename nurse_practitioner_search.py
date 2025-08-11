@@ -280,6 +280,9 @@ class NursePractitionerSearch:
     def get_advanced_search_ui(self):
         """Create an advanced search UI for nurse practitioners"""
         
+        # Debug output
+        st.write("🔧 **Debug**: NP Search UI method called")
+        
         st.subheader("🔍 Advanced Nurse Practitioner Search")
         
         # Creative search options
@@ -378,6 +381,8 @@ class NursePractitionerSearch:
                     st.info("No results found. Try adjusting your search criteria or adding more keywords.")
                     return None
         
+        # Debug output at the end
+        st.write("🔧 **Debug**: NP Search UI method completed")
         return None
     
     def analyze_results(self, results_df):
@@ -454,7 +459,8 @@ class NursePractitionerSearch:
                     mime="text/csv"
                 )
             except Exception as e:
-                st.error(f"CSV download error: {str(e)}")
+                st.error(f"❌ CSV download failed: {str(e)}")
+                st.info("💡 The data may contain unsupported characters.")
         
         with col_dl2:
             # Create a summary report
@@ -467,9 +473,8 @@ class NursePractitionerSearch:
                     mime="text/plain"
                 )
             except Exception as e:
-                st.error(f"Summary report error: {str(e)}")
-                st.write("**Error creating summary report:**")
-                st.write(str(e))
+                st.error(f"❌ Summary report error: {str(e)}")
+                st.info("💡 Could not generate summary report due to data issues.")
         
         # Detailed analysis tabs
         tab1, tab2, tab3 = st.tabs(["State Distribution", "Company Analysis", "Skills Analysis"])
@@ -596,6 +601,37 @@ This report was generated automatically by the Nurse Practitioner Search Tool.
             st.dataframe(education_counts.reset_index().rename(
                 columns={'index': 'Education', 'EDUCATION': 'Count'}
             ))
+
+    def _fix_dataframe_for_streamlit(self, df):
+        """Fix dataframe for Streamlit display compatibility"""
+        try:
+            # Convert object columns to string to avoid PyArrow issues
+            for col in df.columns:
+                if df[col].dtype == 'object':
+                    df[col] = df[col].astype(str)
+                elif df[col].dtype == 'datetime64[ns]':
+                    df[col] = df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+            return df
+        except Exception as e:
+            st.warning(f"Warning: Could not fully process dataframe for display: {str(e)}")
+            return df
+    
+    def _clean_data_for_excel(self, df):
+        """Clean dataframe data to make it Excel-compatible"""
+        cleaned_df = df.copy()
+        
+        for col in cleaned_df.columns:
+            if cleaned_df[col].dtype == 'object':
+                # Replace illegal characters that cause Excel export errors
+                cleaned_df[col] = cleaned_df[col].astype(str).apply(
+                    lambda x: x.replace('~', '-').replace('`', "'").replace('|', '-') if pd.notna(x) else x
+                )
+                # Truncate very long strings to avoid Excel cell limits
+                cleaned_df[col] = cleaned_df[col].apply(
+                    lambda x: x[:32000] + '...' if pd.notna(x) and len(str(x)) > 32000 else x
+                )
+        
+        return cleaned_df
 
 
 def main():

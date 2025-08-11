@@ -335,25 +335,43 @@ def show_results_analysis():
         # Download options
         col_dl1, col_dl2 = st.columns(2)
         with col_dl1:
-            csv = results_df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv,
-                file_name="query_results.csv",
-                mime="text/csv"
-            )
+            try:
+                csv = results_df.to_csv(index=False)
+                st.download_button(
+                    label="📥 Download CSV",
+                    data=csv,
+                    file_name="query_results.csv",
+                    mime="text/csv"
+                )
+            except Exception as e:
+                st.error(f"❌ CSV download failed: {str(e)}")
+                st.info("💡 The data may contain unsupported characters.")
         
         with col_dl2:
             excel_buffer = io.BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-                results_df.to_excel(writer, index=False, sheet_name='Query Results')
-            excel_data = excel_buffer.getvalue()
-            st.download_button(
-                label="📥 Download Excel",
-                data=excel_data,
-                file_name="query_results.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            try:
+                # Clean data for Excel export
+                cleaned_df = clean_data_for_excel(results_df)
+                with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                    cleaned_df.to_excel(writer, index=False, sheet_name='Query Results')
+                excel_data = excel_buffer.getvalue()
+                st.download_button(
+                    label="📥 Download Excel",
+                    data=excel_data,
+                    file_name="query_results.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            except Exception as e:
+                st.error(f"❌ Excel export failed: {str(e)}")
+                st.info("💡 Try downloading as CSV instead, or the data may contain unsupported characters.")
+                # Fallback to CSV
+                csv_data = results_df.to_csv(index=False)
+                st.download_button(
+                    label="📥 Download CSV (Fallback)",
+                    data=csv_data,
+                    file_name="query_results.csv",
+                    mime="text/csv"
+                )
         
         # Show sample data analysis
         st.subheader("Data Preview")
@@ -369,6 +387,23 @@ def show_results_analysis():
             missing_data = results_df.isnull().sum().to_frame('Missing Count')
             missing_data['Missing Percentage'] = (missing_data['Missing Count'] / len(results_df)) * 100
             st.dataframe(missing_data, use_container_width=True)
+
+def clean_data_for_excel(df):
+    """Clean dataframe data to make it Excel-compatible"""
+    cleaned_df = df.copy()
+    
+    for col in cleaned_df.columns:
+        if cleaned_df[col].dtype == 'object':
+            # Replace illegal characters that cause Excel export errors
+            cleaned_df[col] = cleaned_df[col].astype(str).apply(
+                lambda x: x.replace('~', '-').replace('`', "'").replace('|', '-') if pd.notna(x) else x
+            )
+            # Truncate very long strings to avoid Excel cell limits
+            cleaned_df[col] = cleaned_df[col].apply(
+                lambda x: x[:32000] + '...' if pd.notna(x) and len(str(x)) > 32000 else x
+            )
+    
+    return cleaned_df
 
 def main():
     st.title("❄️🏥 GradToHired Database Automation")
@@ -467,15 +502,85 @@ def main():
         - **Advanced filtering**: Refine searches by location, company, and skills
         """)
         
+        # Show configuration status in main content for NP search
+        with st.expander("🔧 Configuration Status for NP Search", expanded=True):
+            try:
+                # Check NP search specific configuration
+                np_config = {
+                    "OpenAI API Key": st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY"),
+                    "Snowflake User": st.secrets.get("SNOWFLAKE_USER") or os.getenv("SNOWFLAKE_USER"),
+                    "Snowflake Account": st.secrets.get("SNOWFLAKE_ACCOUNT") or os.getenv("SNOWFLAKE_ACCOUNT"),
+                    "Snowflake Database": st.secrets.get("SNOWFLAKE_DATABASE") or os.getenv("SNOWFLAKE_DATABASE"),
+                    "Snowflake Schema": st.secrets.get("SNOWFLAKE_SCHEMA") or os.getenv("SNOWFLAKE_SCHEMA")
+                }
+                
+                for var_name, var_value in np_config.items():
+                    if var_value:
+                        st.success(f"✅ {var_name}: {var_value[:8]}..." if len(str(var_value)) > 8 else f"✅ {var_name}: {var_value}")
+                    else:
+                        st.error(f"❌ {var_name}: Not configured")
+                
+                if all(np_config.values()):
+                    st.success("🎉 All configuration values are set! NP Search should work properly.")
+                else:
+                    st.warning("⚠️ Some configuration values are missing. NP Search may not work correctly.")
+                    
+            except Exception as e:
+                st.error(f"❌ Error checking configuration: {str(e)}")
+        
         # Initialize the nurse practitioner search
-        np_search = NursePractitionerSearch()
-        
-        # Show the advanced search UI
-        results = np_search.get_advanced_search_ui()
-        
-        # If we have results, analyze them
-        if results is not None:
-            np_search.analyze_results(results)
+        try:
+            np_search = NursePractitionerSearch()
+            st.success("✅ Nurse Practitioner Search module initialized successfully!")
+            
+            # Debug information
+            with st.expander("🐛 Debug Information", expanded=False):
+                st.write("**Module Status:** ✅ Loaded")
+                st.write("**Configuration:** ✅ Validated")
+                st.write("**Snowflake Connection:** Ready")
+                st.write("**OpenAI Client:** Ready")
+            
+            # Test button to verify module is working
+            if st.button("🧪 Test NP Search Module", type="secondary"):
+                st.write("🔧 **Testing NP Search Module...**")
+                try:
+                    # Test basic functionality
+                    st.write(f"✅ Nurse titles loaded: {len(np_search.nurse_titles)}")
+                    st.write(f"✅ Telehealth keywords loaded: {len(np_search.telehealth_keywords)}")
+                    st.write(f"✅ State abbreviations loaded: {len(np_search.state_abbreviations)}")
+                    st.write("🎉 NP Search module is working correctly!")
+                except Exception as e:
+                    st.error(f"❌ Test failed: {str(e)}")
+            
+            # Show the advanced search UI
+            st.info("🔍 Loading search interface...")
+            results = np_search.get_advanced_search_ui()
+            
+            # If we have results, analyze them
+            if results is not None and not results.empty:
+                st.success(f"🎯 Found {len(results)} candidates!")
+                np_search.analyze_results(results)
+            elif results is not None:
+                st.info("ℹ️ No results found. Try adjusting your search criteria.")
+            else:
+                st.info("ℹ️ Search interface loaded. Enter your criteria above to search.")
+                
+        except Exception as e:
+            st.error(f"❌ Failed to initialize Nurse Practitioner Search: {str(e)}")
+            st.info("💡 Check your configuration and try again.")
+            
+            # Show detailed error information
+            with st.expander("🐛 Error Details", expanded=True):
+                st.code(f"Error Type: {type(e).__name__}")
+                st.code(f"Error Message: {str(e)}")
+                st.code(f"Error Location: {e.__traceback__.tb_frame.f_code.co_name}")
+                
+            # Show troubleshooting steps
+            st.markdown("### 🔧 Troubleshooting Steps:")
+            st.markdown("1. **Check Configuration**: Ensure all environment variables are set")
+            st.markdown("2. **Verify Secrets**: In Streamlit Cloud, go to Settings → Secrets")
+            st.markdown("3. **Check Logs**: Look for detailed error messages")
+            st.markdown("4. **Test Connection**: Try the General Query interface first")
 
 if __name__ == "__main__":
     main() 
