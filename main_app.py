@@ -19,7 +19,13 @@ st.set_page_config(
 )
 
 # Initialize OpenAI client
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    st.error("❌ OPENAI_API_KEY environment variable not found!")
+    st.info("💡 If deploying on Streamlit Cloud, go to Settings → Secrets and add your OpenAI API key.")
+    st.stop()
+
+client = openai.OpenAI(api_key=api_key)
 
 # Snowflake connection configuration
 SNOWFLAKE_CONFIG = {

@@ -17,6 +17,18 @@ class NursePractitionerSearch:
     """Specialized class for nurse practitioner searches"""
     
     def __init__(self):
+        # Check for required environment variables
+        required_vars = [
+            "SNOWFLAKE_USER", "SNOWFLAKE_PASSWORD", "SNOWFLAKE_ACCOUNT", 
+            "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_DATABASE", "SNOWFLAKE_SCHEMA"
+        ]
+        
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+        if missing_vars:
+            st.error(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
+            st.info("💡 If deploying on Streamlit Cloud, go to Settings → Secrets and add your Snowflake credentials.")
+            st.stop()
+        
         self.snowflake_config = {
             "user": os.getenv("SNOWFLAKE_USER"),
             "password": os.getenv("SNOWFLAKE_PASSWORD"),
