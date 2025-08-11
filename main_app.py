@@ -406,7 +406,7 @@ def clean_data_for_excel(df):
     return cleaned_df
 
 def main():
-    st.title("❄️🏥 GradToHired Database Automation")
+    st.title("❄️ GradToHired Database Automation")
     st.markdown("Convert natural language to SQL and find specialized healthcare professionals")
     
     # Sidebar navigation
