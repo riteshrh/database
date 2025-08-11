@@ -492,7 +492,6 @@ def main():
     st.markdown("---")
     
     if interface_choice == "General Query":
-        st.subheader("🔍 General Natural Language Query")
         show_general_query_interface()
         show_results_analysis()
     
@@ -505,39 +504,12 @@ def main():
         - **Advanced filtering**: Refine searches by location, company, and skills
         """)
         
-        # Show configuration status in main content for NP search
-        with st.expander("🔧 Configuration Status for NP Search", expanded=True):
-            try:
-                # Check NP search specific configuration
-                np_config = {
-                    "OpenAI API Key": st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY"),
-                    "Snowflake User": st.secrets.get("SNOWFLAKE_USER") or os.getenv("SNOWFLAKE_USER"),
-                    "Snowflake Account": st.secrets.get("SNOWFLAKE_ACCOUNT") or os.getenv("SNOWFLAKE_ACCOUNT"),
-                    "Snowflake Database": st.secrets.get("SNOWFLAKE_DATABASE") or os.getenv("SNOWFLAKE_DATABASE"),
-                    "Snowflake Schema": st.secrets.get("SNOWFLAKE_SCHEMA") or os.getenv("SNOWFLAKE_SCHEMA")
-                }
-                
-                for var_name, var_value in np_config.items():
-                    if var_value:
-                        st.success(f"✅ {var_name}: {var_value[:8]}..." if len(str(var_value)) > 8 else f"✅ {var_name}: {var_value}")
-                    else:
-                        st.error(f"❌ {var_name}: Not configured")
-                
-                if all(np_config.values()):
-                    st.success("🎉 All configuration values are set! NP Search should work properly.")
-                else:
-                    st.warning("⚠️ Some configuration values are missing. NP Search may not work correctly.")
-                    
-            except Exception as e:
-                st.error(f"❌ Error checking configuration: {str(e)}")
-        
         # Initialize the nurse practitioner search
         try:
             np_search = NursePractitionerSearch()
             st.success("✅ Nurse Practitioner Search module initialized successfully!")
             
             # Show the advanced search UI
-            st.info("🔍 Loading search interface...")
             results = np_search.get_advanced_search_ui()
             
             # If we have results, analyze them
