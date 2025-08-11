@@ -17,26 +17,38 @@ class NursePractitionerSearch:
     """Specialized class for nurse practitioner searches"""
     
     def __init__(self):
-        # Check for required environment variables
-        required_vars = [
-            "SNOWFLAKE_USER", "SNOWFLAKE_PASSWORD", "SNOWFLAKE_ACCOUNT", 
-            "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_DATABASE", "SNOWFLAKE_SCHEMA"
-        ]
-        
-        missing_vars = [var for var in required_vars if not os.getenv(var)]
-        if missing_vars:
-            st.error(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
-            st.info("💡 If deploying on Streamlit Cloud, go to Settings → Secrets and add your Snowflake credentials.")
+        # Check for required environment variables using Streamlit secrets
+        try:
+            # Try Streamlit secrets first (for deployed apps)
+            required_vars = [
+                "SNOWFLAKE_USER", "SNOWFLAKE_PASSWORD", "SNOWFLAKE_ACCOUNT", 
+                "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_DATABASE", "SNOWFLAKE_SCHEMA"
+            ]
+            
+            missing_vars = []
+            for var in required_vars:
+                if not st.secrets.get(var) and not os.getenv(var):
+                    missing_vars.append(var)
+            
+            if missing_vars:
+                st.error(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
+                st.info("💡 **Local Development**: Add to .env file | **Streamlit Cloud**: Add to Settings → Secrets")
+                st.stop()
+            
+            # Load configuration with fallback
+            self.snowflake_config = {
+                "user": st.secrets.get("SNOWFLAKE_USER") or os.getenv("SNOWFLAKE_USER"),
+                "password": st.secrets.get("SNOWFLAKE_PASSWORD") or os.getenv("SNOWFLAKE_PASSWORD"),
+                "account": st.secrets.get("SNOWFLAKE_ACCOUNT") or os.getenv("SNOWFLAKE_ACCOUNT"),
+                "warehouse": st.secrets.get("SNOWFLAKE_WAREHOUSE") or os.getenv("SNOWFLAKE_WAREHOUSE"),
+                "database": st.secrets.get("SNOWFLAKE_DATABASE") or os.getenv("SNOWFLAKE_DATABASE"),
+                "schema": st.secrets.get("SNOWFLAKE_SCHEMA") or os.getenv("SNOWFLAKE_SCHEMA")
+            }
+            
+        except Exception as e:
+            st.error(f"❌ Error loading Snowflake configuration: {str(e)}")
+            st.info("💡 **Local Development**: Add to .env file | **Streamlit Cloud**: Add to Settings → Secrets")
             st.stop()
-        
-        self.snowflake_config = {
-            "user": os.getenv("SNOWFLAKE_USER"),
-            "password": os.getenv("SNOWFLAKE_PASSWORD"),
-            "account": os.getenv("SNOWFLAKE_ACCOUNT"),
-            "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
-            "database": os.getenv("SNOWFLAKE_DATABASE"),
-            "schema": os.getenv("SNOWFLAKE_SCHEMA")
-        }
         
         # Common nurse practitioner job titles and variations
         self.nurse_titles = [

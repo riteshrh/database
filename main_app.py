@@ -19,23 +19,47 @@ st.set_page_config(
 )
 
 # Initialize OpenAI client
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    st.error("❌ OPENAI_API_KEY environment variable not found!")
-    st.info("💡 If deploying on Streamlit Cloud, go to Settings → Secrets and add your OpenAI API key.")
+try:
+    # Try Streamlit secrets first (for deployed apps)
+    api_key = st.secrets.get("OPENAI_API_KEY")
+    if not api_key:
+        # Fallback to environment variables (for local development)
+        api_key = os.getenv("OPENAI_API_KEY")
+    
+    if not api_key:
+        st.error("❌ OPENAI_API_KEY not found!")
+        st.info("💡 **Local Development**: Add to .env file | **Streamlit Cloud**: Add to Settings → Secrets")
+        st.stop()
+    
+    client = openai.OpenAI(api_key=api_key)
+except Exception as e:
+    st.error(f"❌ Error initializing OpenAI client: {str(e)}")
+    st.info("💡 **Local Development**: Add to .env file | **Streamlit Cloud**: Add to Settings → Secrets")
     st.stop()
 
-client = openai.OpenAI(api_key=api_key)
-
 # Snowflake connection configuration
-SNOWFLAKE_CONFIG = {
-    "user": os.getenv("SNOWFLAKE_USER"),
-    "password": os.getenv("SNOWFLAKE_PASSWORD"),
-    "account": os.getenv("SNOWFLAKE_ACCOUNT"),
-    "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
-    "database": os.getenv("SNOWFLAKE_DATABASE"),
-    "schema": os.getenv("SNOWFLAKE_SCHEMA")
-}
+try:
+    # Try Streamlit secrets first (for deployed apps)
+    SNOWFLAKE_CONFIG = {
+        "user": st.secrets.get("SNOWFLAKE_USER") or os.getenv("SNOWFLAKE_USER"),
+        "password": st.secrets.get("SNOWFLAKE_PASSWORD") or os.getenv("SNOWFLAKE_PASSWORD"),
+        "account": st.secrets.get("SNOWFLAKE_ACCOUNT") or os.getenv("SNOWFLAKE_ACCOUNT"),
+        "warehouse": st.secrets.get("SNOWFLAKE_WAREHOUSE") or os.getenv("SNOWFLAKE_WAREHOUSE"),
+        "database": st.secrets.get("SNOWFLAKE_DATABASE") or os.getenv("SNOWFLAKE_DATABASE"),
+        "schema": st.secrets.get("SNOWFLAKE_SCHEMA") or os.getenv("SNOWFLAKE_SCHEMA")
+    }
+    
+    # Check if any required values are missing
+    missing_values = [key for key, value in SNOWFLAKE_CONFIG.items() if not value]
+    if missing_values:
+        st.error(f"❌ Missing Snowflake configuration: {', '.join(missing_values)}")
+        st.info("💡 **Local Development**: Add to .env file | **Streamlit Cloud**: Add to Settings → Secrets")
+        st.stop()
+        
+except Exception as e:
+    st.error(f"❌ Error loading Snowflake configuration: {str(e)}")
+    st.info("💡 **Local Development**: Add to .env file | **Streamlit Cloud**: Add to Settings → Secrets")
+    st.stop()
 
 # Database schema information for context
 DATABASE_SCHEMA = """
@@ -387,19 +411,47 @@ def main():
         st.markdown("---")
         st.subheader("Configuration Status")
         
-        # Check environment variables
-        env_vars = {
-            "OpenAI API Key": os.getenv("OPENAI_API_KEY"),
-            "Snowflake User": os.getenv("SNOWFLAKE_USER"),
-            "Snowflake Account": os.getenv("SNOWFLAKE_ACCOUNT"),
-            "Snowflake Database": os.getenv("SNOWFLAKE_DATABASE")
-        }
+        # Check environment variables using Streamlit secrets
+        try:
+            # Try to get values from Streamlit secrets first
+            env_vars = {
+                "OpenAI API Key": st.secrets.get("OPENAI_API_KEY", "Not set in secrets"),
+                "Snowflake User": st.secrets.get("SNOWFLAKE_USER", "Not set in secrets"),
+                "Snowflake Account": st.secrets.get("SNOWFLAKE_ACCOUNT", "Not set in secrets"),
+                "Snowflake Database": st.secrets.get("SNOWFLAKE_DATABASE", "Not set in secrets")
+            }
+        except:
+            # Fallback to environment variables for local development
+            env_vars = {
+                "OpenAI API Key": os.getenv("OPENAI_API_KEY", "Not set"),
+                "Snowflake User": os.getenv("SNOWFLAKE_USER", "Not set"),
+                "Snowflake Account": os.getenv("SNOWFLAKE_ACCOUNT", "Not set"),
+                "Snowflake Database": os.getenv("SNOWFLAKE_DATABASE", "Not set")
+            }
         
         for var_name, var_value in env_vars.items():
-            if var_value:
-                st.success(f"✅ {var_name}")
+            if var_value and var_value != "Not set" and var_value != "Not set in secrets":
+                # Show first few characters for security
+                display_value = f"✅ {var_value[:8]}..." if len(str(var_value)) > 8 else f"✅ {var_value}"
+                st.success(display_value)
             else:
                 st.error(f"❌ {var_name}")
+        
+        # Add helpful information
+        st.info("💡 **Local Development**: Use .env file | **Streamlit Cloud**: Use Settings → Secrets")
+        
+        # Show secrets status
+        try:
+            secrets_available = list(st.secrets.keys())
+            if secrets_available:
+                st.success(f"🔐 Secrets loaded: {len(secrets_available)} variables")
+                with st.expander("View loaded secrets (names only)"):
+                    for secret_name in secrets_available:
+                        st.write(f"• {secret_name}")
+            else:
+                st.warning("🔐 No secrets found in Streamlit Cloud")
+        except:
+            st.info("🔐 Running in local mode (using .env file)")
     
     # Main content area
     if interface_choice == "General Query":
