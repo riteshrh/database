@@ -409,15 +409,6 @@ def main():
     st.title("❄️🏥 GradToHired Database Automation")
     st.markdown("Convert natural language to SQL and find specialized healthcare professionals")
     
-    # Debug header to verify code is updated
-    with st.expander("🔧 Debug: App Version Check", expanded=True):
-        st.success("✅ Updated main_app.py loaded successfully!")
-        st.write("**Current Features:**")
-        st.write("- ✅ General Query Interface")
-        st.write("- ✅ Nurse Practitioner Search")
-        st.write("- ✅ Configuration Status")
-        st.write("- ✅ Excel Export Protection")
-    
     # Sidebar navigation
     with st.sidebar:
         st.header("Navigation")
@@ -428,9 +419,6 @@ def main():
             ["General Query", "Nurse Practitioner Search"],
             help="Select which interface to use"
         )
-        
-        # Debug: Show current selection
-        st.info(f"🔍 **Current Selection:** {interface_choice}")
         
         st.markdown("---")
         
@@ -547,25 +535,6 @@ def main():
         try:
             np_search = NursePractitionerSearch()
             st.success("✅ Nurse Practitioner Search module initialized successfully!")
-            
-            # Debug information
-            with st.expander("🐛 Debug Information", expanded=False):
-                st.write("**Module Status:** ✅ Loaded")
-                st.write("**Configuration:** ✅ Validated")
-                st.write("**Snowflake Connection:** Ready")
-                st.write("**OpenAI Client:** Ready")
-            
-            # Test button to verify module is working
-            if st.button("🧪 Test NP Search Module", type="secondary"):
-                st.write("🔧 **Testing NP Search Module...**")
-                try:
-                    # Test basic functionality
-                    st.write(f"✅ Nurse titles loaded: {len(np_search.nurse_titles)}")
-                    st.write(f"✅ Telehealth keywords loaded: {len(np_search.telehealth_keywords)}")
-                    st.write(f"✅ State abbreviations loaded: {len(np_search.state_abbreviations)}")
-                    st.write("🎉 NP Search module is working correctly!")
-                except Exception as e:
-                    st.error(f"❌ Test failed: {str(e)}")
             
             # Show the advanced search UI
             st.info("🔍 Loading search interface...")

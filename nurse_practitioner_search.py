@@ -280,9 +280,6 @@ class NursePractitionerSearch:
     def get_advanced_search_ui(self):
         """Create an advanced search UI for nurse practitioners"""
         
-        # Debug output
-        st.write("🔧 **Debug**: NP Search UI method called")
-        
         st.subheader("🔍 Advanced Nurse Practitioner Search")
         
         # Creative search options
@@ -381,8 +378,6 @@ class NursePractitionerSearch:
                     st.info("No results found. Try adjusting your search criteria or adding more keywords.")
                     return None
         
-        # Debug output at the end
-        st.write("🔧 **Debug**: NP Search UI method completed")
         return None
     
     def analyze_results(self, results_df):
