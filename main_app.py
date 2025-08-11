@@ -441,52 +441,6 @@ def main():
         st.markdown("- `contact_search_dz` - Contact & job info")
         st.markdown("- `org_latest_copy` - Company data")
         st.markdown("- `per_latest_copy` - Person profiles")
-        
-        # Configuration status
-        st.markdown("---")
-        st.subheader("Configuration Status")
-        
-        # Check environment variables using Streamlit secrets
-        try:
-            # Try to get values from Streamlit secrets first
-            env_vars = {
-                "OpenAI API Key": st.secrets.get("OPENAI_API_KEY", "Not set in secrets"),
-                "Snowflake User": st.secrets.get("SNOWFLAKE_USER", "Not set in secrets"),
-                "Snowflake Account": st.secrets.get("SNOWFLAKE_ACCOUNT", "Not set in secrets"),
-                "Snowflake Database": st.secrets.get("SNOWFLAKE_DATABASE", "Not set in secrets")
-            }
-        except:
-            # Fallback to environment variables for local development
-            env_vars = {
-                "OpenAI API Key": os.getenv("OPENAI_API_KEY", "Not set"),
-                "Snowflake User": os.getenv("SNOWFLAKE_USER", "Not set"),
-                "Snowflake Account": os.getenv("SNOWFLAKE_ACCOUNT", "Not set"),
-                "Snowflake Database": os.getenv("SNOWFLAKE_DATABASE", "Not set")
-            }
-        
-        for var_name, var_value in env_vars.items():
-            if var_value and var_value != "Not set" and var_value != "Not set in secrets":
-                # Show first few characters for security
-                display_value = f"✅ {var_value[:8]}..." if len(str(var_value)) > 8 else f"✅ {var_value}"
-                st.success(display_value)
-            else:
-                st.error(f"❌ {var_name}")
-        
-        # Add helpful information
-        st.info("💡 **Local Development**: Use .env file | **Streamlit Cloud**: Use Settings → Secrets")
-        
-        # Show secrets status
-        try:
-            secrets_available = list(st.secrets.keys())
-            if secrets_available:
-                st.success(f"🔐 Secrets loaded: {len(secrets_available)} variables")
-                with st.expander("View loaded secrets (names only)"):
-                    for secret_name in secrets_available:
-                        st.write(f"• {secret_name}")
-            else:
-                st.warning("🔐 No secrets found in Streamlit Cloud")
-        except:
-            st.info("🔐 Running in local mode (using .env file)")
     
     # Main content area
     st.markdown("---")
