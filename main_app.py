@@ -409,6 +409,15 @@ def main():
     st.title("❄️🏥 GradToHired Database Automation")
     st.markdown("Convert natural language to SQL and find specialized healthcare professionals")
     
+    # Debug header to verify code is updated
+    with st.expander("🔧 Debug: App Version Check", expanded=True):
+        st.success("✅ Updated main_app.py loaded successfully!")
+        st.write("**Current Features:**")
+        st.write("- ✅ General Query Interface")
+        st.write("- ✅ Nurse Practitioner Search")
+        st.write("- ✅ Configuration Status")
+        st.write("- ✅ Excel Export Protection")
+    
     # Sidebar navigation
     with st.sidebar:
         st.header("Navigation")
@@ -419,6 +428,9 @@ def main():
             ["General Query", "Nurse Practitioner Search"],
             help="Select which interface to use"
         )
+        
+        # Debug: Show current selection
+        st.info(f"🔍 **Current Selection:** {interface_choice}")
         
         st.markdown("---")
         
@@ -489,7 +501,10 @@ def main():
             st.info("🔐 Running in local mode (using .env file)")
     
     # Main content area
+    st.markdown("---")
+    
     if interface_choice == "General Query":
+        st.subheader("🔍 General Natural Language Query")
         show_general_query_interface()
         show_results_analysis()
     
@@ -581,6 +596,10 @@ def main():
             st.markdown("2. **Verify Secrets**: In Streamlit Cloud, go to Settings → Secrets")
             st.markdown("3. **Check Logs**: Look for detailed error messages")
             st.markdown("4. **Test Connection**: Try the General Query interface first")
+    
+    else:
+        st.error(f"❌ Unknown interface choice: {interface_choice}")
+        st.info("💡 Please select either 'General Query' or 'Nurse Practitioner Search' from the sidebar.")
 
 if __name__ == "__main__":
     main() 
